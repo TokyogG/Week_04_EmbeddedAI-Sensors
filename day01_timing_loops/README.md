@@ -1,0 +1,10 @@
+### Timing Results (Pi 5, Linux, 50 Hz loop)
+
+- Period: 20,000 µs (50 Hz)
+- Simulated work: 2,000 µs
+- Mean lateness: 60 µs
+- Std dev: 115 µs
+- Max lateness: 2,645 µs
+- Overruns: 0 / 500 cycles
+
+**Interpretation:** Average timing is stable (~60 µs late), but Linux scheduling can introduce occasional ms-scale jitter (2.6 ms worst-case observed). MCU timers/RTOS tasks are designed to reduce this unpredictability.
