@@ -1,218 +1,200 @@
-# **Week 04 — Embedded AI & Sensor Pipelines (C++ → TinyML Ready)**
+# Week 04 — Embedded AI & Sensor Pipelines
 
-*Part of the 16-Week Edge AI Engineering Bootcamp*
-
-Week 04 builds on the C/C++ foundations from Week 03 and begins transitioning toward **embedded AI execution**.
-The focus is on **sensor pipelines, deterministic timing, and lightweight inference logic** that will later map cleanly onto microcontrollers (STM32) and TinyML runtimes.
+*Part of the 16‑Week Edge AI Engineering Bootcamp*
 
 ---
 
-## 🚀 **Weekly Objectives**
+## Overview
+
+Week 04 transitions from **embedded C/C++ fundamentals** into **edge‑AI execution architecture**.
+The emphasis is not on training models, but on building the **runtime systems** that make AI *deployable* under real embedded constraints:
+
+* Deterministic timing
+* Bounded memory usage
+* Modular sensor pipelines
+* Event‑driven inference
+* INT8, model‑ready execution paths
+
+By the end of the week, the system is architecturally prepared to integrate real accelerators (Hailo, CMSIS‑NN, TFLite Micro) **without redesigning the pipeline**.
+
+---
+
+## Weekly Objectives
 
 By the end of Week 04, you should be able to:
 
-### **Embedded Systems**
+### Embedded Systems
 
-* Design deterministic sensor loops (fixed-rate execution)
-* Reason about timing, buffering, and latency
-* Structure multi-sensor pipelines in C/C++
+* Design fixed‑rate execution loops and quantify jitter
+* Reason about latency, buffering, and scheduling
+* Structure multi‑sensor pipelines in modern C++
 
-### **Embedded AI Foundations**
+### Embedded AI Foundations
 
-* Implement simple anomaly detection / inference logic in C++
-* Understand where ML fits vs classic DSP / threshold logic
-* Prepare code for future MCU deployment (no dynamic allocation in hot paths)
+* Implement lightweight anomaly detection in C++
+* Understand where classical logic fits vs ML
+* Prepare inference paths for MCU / NPU deployment
 
-### **Performance & Constraints**
+### Performance & Constraints
 
-* Measure execution time at millisecond and microsecond scales
-* Track memory usage and binary size
-* Reason about tradeoffs: accuracy vs latency vs power
+* Measure execution time at µs–ms scale
+* Track memory usage and avoid dynamic allocation in hot paths
+* Reason about accuracy vs latency vs memory trade‑offs
 
 ---
 
-## 📁 **Folder Structure (Planned)**
+## Folder Structure (Final)
 
-```text
+```
 Week_04_EmbeddedAI-Sensors/
-│
-├── day01_timing_loops/
-│   ├── fixed_rate_loop.cpp
-│   ├── jitter_measure.cpp
-│   └── CMakeLists.txt
-│
-├── day02_sensor_pipeline/
-│   ├── sensor_manager.cpp
-│   ├── sensor_manager.h
-│   ├── mpu6050_driver.cpp
-│   └── CMakeLists.txt
-│
-├── day03_simple_inference/
-│   ├── threshold_detector.cpp
-│   ├── threshold_detector.h
-│   ├── anomaly_demo.cpp
-│   └── CMakeLists.txt
-│
-├── day04_memory_constraints/
-│   ├── static_vs_dynamic.cpp
-│   ├── stack_usage.cpp
-│   └── notes.md
-│
-└── day05_integration_summary/
+├── day01_timing_loops
+├── day02_sensor_pipeline
+├── day03_simple_inference
+├── day04_memory_constraints
+├── day05_integration_summary
+└── README.md
 ```
 
-> ⚠️ Folder names are **tentative** — they may evolve as implementations solidify.
+Each day builds directly on the previous one.
 
 ---
 
-## 🟦 **Day 01 — Deterministic Timing & Fixed-Rate Loops**
+## Day 01 — Deterministic Timing & Jitter
 
-### Focus
+**Focus**
 
-* Fixed-rate execution (e.g. 50 Hz, 100 Hz)
+* Fixed‑rate loops (50 Hz)
 * `sleep_until` vs `sleep_for`
-* Measuring jitter and drift
-* Why deterministic timing matters for embedded AI
+* Measuring lateness and jitter
+* Why worst‑case latency matters
 
-### Expected Outcomes
+**Key Results (Pi 5, Linux, 50 Hz)**
 
-* Stable loop timing with quantified jitter
-* Understanding of Linux scheduling limits vs MCU behavior
+* Period: 20 000 µs
+* Mean lateness: ~50–60 µs
+* Worst‑case lateness: up to ~2.6 ms
+* Overruns: 0 / 500 cycles
 
-### Timing Results (Pi 5, Linux, 50 Hz loop)
-
-- Period: 20,000 µs (50 Hz)
-- Simulated work: 2,000 µs
-- Mean lateness: 60 µs
-- Std dev: 115 µs
-- Max lateness: 2,645 µs
-- Overruns: 0 / 500 cycles
-
-**Interpretation:** Average timing is stable (~60 µs late), but Linux scheduling can introduce occasional ms-scale jitter (2.6 ms worst-case observed). MCU timers/RTOS tasks are designed to reduce this unpredictability.
-
-### Jitter Observations
-
-Two back-to-back runs on the same system produced very different worst-case behavior:
-
-| Run | Mean | Max | Std Dev |
-|----|-----|-----|--------|
-| Run A | ~60 µs | 2.6 ms | 115 µs |
-| Run B | ~53 µs | 100 µs | 4 µs |
-
-**Conclusion:** Linux scheduling can appear highly stable but offers no hard real-time guarantees. Worst-case latency must be assumed, not inferred from averages.
+**Takeaway**
+Average timing can look stable, but Linux provides **no hard real‑time guarantees**. Embedded systems must be designed assuming worst‑case behavior.
 
 ---
 
-## 🟧 **Day 02 — Sensor Pipeline Architecture**
+## Day 02 — Sensor Pipeline Architecture
 
-### Focus
+**Focus**
 
-* Managing multiple sensors cleanly
-* Separating acquisition, processing, and output
-* Avoiding tight coupling between drivers and logic
+* Clean multi‑sensor design
+* Decoupling acquisition from processing
+* Embedded‑style interfaces
 
-### Expected Outcomes
+**Key Results**
 
-* Modular sensor pipeline design
-* Clean interfaces suitable for MCU porting
+* Implemented a central `SensorManager` with a common `ISensor` interface
+* Added per‑sensor static RingBuffers to decouple real‑time acquisition from slower logic
+* Verified multi‑sensor sampling within the same tick (fusion‑ready timestamps)
+* Preserved deterministic timing as sensors scaled
 
-📊 Day 02 Results (Sensor Pipeline Architecture)
-
-Implemented a modular SensorManager coordinating multiple sensors under a deterministic 50 Hz loop
-
-Introduced a common ISensor interface, enabling hardware drivers and test sensors to share the same pipeline
-
-Verified multi-sensor sampling within the same tick, producing aligned timestamps suitable for sensor fusion
-
-Added static per-sensor RingBuffers to decouple real-time acquisition from slower processing/logging
-
-Preserved deterministic timing after scaling from one to multiple sensors
-
-Maintained heap-free execution in the hot path, matching embedded/MCU design constraints
-
-Outcome:
-A scalable, embedded-style sensor pipeline that cleanly separates timing, acquisition, buffering, and processing—ready for threshold-based inference (Day 03) and future TinyML/STM32 deployment.
+**Outcome**
+A modular, heap‑free sensor pipeline suitable for MCU deployment and future sensor fusion.
 
 ---
 
-## 🟩 **Day 03 — Simple Inference & Anomaly Detection**
+## Day 03 — Simple Inference & Anomaly Detection
 
-### Focus
+**Focus**
 
-* Threshold-based anomaly detection
-* When classical logic beats ML
-* Framing the problem for later TinyML replacement
+* Lightweight inference without ML
+* Event‑driven decisions
+* Framing problems for later TinyML replacement
 
-### Expected Outcomes
+**Key Results**
 
-* Working anomaly detector in C++
-* Clear data path: sensor → features → decision
+* Feature extraction:
 
----
+  * Acceleration deviation from gravity (`|‖a‖ − 9.81|`)
+  * Temperature
+* Threshold‑based inference detecting:
 
-## 🟪 **Day 04 — Memory & Embedded Constraints**
+  * Mechanical shock
+  * Thermal drift
+* Event‑driven logging (state changes only)
 
-### Focus
-
-* Static vs dynamic allocation
-* Stack usage analysis
-* Binary size awareness
-* Why “it runs on a Pi” is not enough
-
-### Expected Outcomes
-
-* Code that avoids heap allocation in hot paths
-* Awareness of MCU-level constraints before touching STM32
+**Outcome**
+A clean `sensor → features → decision` pipeline producing stable NORMAL ↔ ANOMALY transitions.
 
 ---
 
-## 🟥 **Day 05 — Integration & Weekly Summary**
+## Day 04 — Memory Constraints & Model‑Ready Inference
 
-### Focus
+**Focus**
 
-* Integrating timing, sensors, and inference
-* Measuring end-to-end latency
-* Documenting tradeoffs and lessons learned
+* Embedded memory constraints
+* Model‑shaped inference paths
+* Preparing for real accelerators
 
-### Expected Outcomes
+**Key Concepts**
 
-* End-to-end embedded-style pipeline
-* Clear preparation for:
+* Fixed‑size tensors (`std::array`)
+* Explicit INT8 quantization
+* Stable model input/output contracts
+* `IModel` runtime interface
+* Deterministic post‑processing
 
-  * Week 05 (Quantization concepts)
-  * Week 13 (STM32 + TinyML)
+**Pipeline**
 
----
+```
+SensorManager → RingBuffer → FeatureExtractor → Quantizer(INT8)
+→ Model Interface → PostProcessor → Event
+```
 
-## 📊 **Metrics to Track (Week 04)**
-
-| Metric              | Target / Observation     |
-| ------------------- | ------------------------ |
-| Loop rate stability | ±1–2 ms jitter           |
-| Sensor read latency | measured                 |
-| Inference latency   | measured                 |
-| Heap allocations    | ideally zero in hot path |
-| Binary size         | tracked (baseline)       |
+**Outcome**
+A model‑ready INT8 inference pipeline with deterministic memory usage, ready to swap in Hailo / CMSIS‑NN / TFLite Micro.
 
 ---
 
-## ✅ **Week 04 Outcome**
+## Day 05 — Integration & Weekly Wrap‑Up
 
-By the end of Week 04, you should have:
+**Focus**
 
-* A deterministic, modular C++ sensor pipeline
-* Lightweight inference logic suitable for edge deployment
-* A clear mental model of **what must change** when moving from Pi → MCU
-* Code that is structurally ready for TinyML, even if ML is not yet used
+* One‑command build and execution
+* End‑to‑end verification
+* Engineering narrative
+
+**Key Results**
+
+* Single integration build compiling all days
+* Verified full path: timing → sensors → inference → INT8 model execution
+* Produced a portfolio‑ready embedded AI system
+
+---
+
+## Week 04 Results Summary
+
+* Deterministic 50 Hz loops with measured jitter
+* Modular SensorManager + RingBuffer pipeline
+* Event‑driven anomaly detection
+* INT8, model‑ready inference under memory constraints
+* Architecture prepared for real NPUs and MCUs
 
 ---
 
-## 🔜 **What This Enables Next**
+## Why This Matters
 
-Week 04 sets up:
+Edge AI systems are shaped by **constraints**, not models alone:
 
-* **Week 05:** Quantization & model constraints
-* **Week 06+:** Accelerator deployment (Hailo / NPU)
-* **Week 13:** STM32 + CMSIS-NN + TFLite Micro
+* Memory limits force INT8 quantization and fixed tensor shapes
+* Timing constraints require event‑driven design
+* Clean pipelines enable accelerator portability
+
+These patterns mirror production systems in robotics, rail safety, industrial monitoring, and automotive domains.
 
 ---
+
+## What Comes Next
+
+* **Week 05:** Quantization fundamentals & real models (e.g., MobileNet INT8)
+* **Week 06+:** ONNX → Hailo deployment
+* **Week 13:** STM32 + CMSIS‑NN + TinyML
+
+Week 04 provides the execution backbone for everything that follows.
