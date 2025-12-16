@@ -79,6 +79,28 @@ Week_04_EmbeddedAI-Sensors/
 * Stable loop timing with quantified jitter
 * Understanding of Linux scheduling limits vs MCU behavior
 
+### Timing Results (Pi 5, Linux, 50 Hz loop)
+
+- Period: 20,000 µs (50 Hz)
+- Simulated work: 2,000 µs
+- Mean lateness: 60 µs
+- Std dev: 115 µs
+- Max lateness: 2,645 µs
+- Overruns: 0 / 500 cycles
+
+**Interpretation:** Average timing is stable (~60 µs late), but Linux scheduling can introduce occasional ms-scale jitter (2.6 ms worst-case observed). MCU timers/RTOS tasks are designed to reduce this unpredictability.
+
+### Jitter Observations
+
+Two back-to-back runs on the same system produced very different worst-case behavior:
+
+| Run | Mean | Max | Std Dev |
+|----|-----|-----|--------|
+| Run A | ~60 µs | 2.6 ms | 115 µs |
+| Run B | ~53 µs | 100 µs | 4 µs |
+
+**Conclusion:** Linux scheduling can appear highly stable but offers no hard real-time guarantees. Worst-case latency must be assumed, not inferred from averages.
+
 ---
 
 ## 🟧 **Day 02 — Sensor Pipeline Architecture**
@@ -93,6 +115,23 @@ Week_04_EmbeddedAI-Sensors/
 
 * Modular sensor pipeline design
 * Clean interfaces suitable for MCU porting
+
+📊 Day 02 Results (Sensor Pipeline Architecture)
+
+Implemented a modular SensorManager coordinating multiple sensors under a deterministic 50 Hz loop
+
+Introduced a common ISensor interface, enabling hardware drivers and test sensors to share the same pipeline
+
+Verified multi-sensor sampling within the same tick, producing aligned timestamps suitable for sensor fusion
+
+Added static per-sensor RingBuffers to decouple real-time acquisition from slower processing/logging
+
+Preserved deterministic timing after scaling from one to multiple sensors
+
+Maintained heap-free execution in the hot path, matching embedded/MCU design constraints
+
+Outcome:
+A scalable, embedded-style sensor pipeline that cleanly separates timing, acquisition, buffering, and processing—ready for threshold-based inference (Day 03) and future TinyML/STM32 deployment.
 
 ---
 
